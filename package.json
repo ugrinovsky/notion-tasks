@@ -1,0 +1,22 @@
+{
+  "name": "notion-tasks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fredure/notion-tasks.git"
+  },
+  "author": "Nazar Ugrinovsky <nazar9505@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fredure/notion-tasks/issues"
+  },
+  "homepage": "https://github.com/fredure/notion-tasks#readme",
+  "dependencies": {
+    "@notionhq/client": "^0.4.3"
+  }
+}
