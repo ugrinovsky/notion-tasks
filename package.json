@@ -10,6 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/fredure/notion-tasks.git"
   },
+  "type": "module",
   "author": "Nazar Ugrinovsky <nazar9505@gmail.com>",
   "license": "ISC",
   "bugs": {

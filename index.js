@@ -3,11 +3,11 @@ import { readFile } from 'fs/promises';
 const tasks = JSON.parse(await readFile(new URL('./tasks.json', import.meta.url)));
 
 const notion = new Client ({
-  auth: process.env.SECRET
+  auth: ''
 });
 
-const databaseId = process.env.DBID;
-const userDatabaseId = process.env.USERDBID;
+const databaseId = '';
+const userDatabaseId = '';
 
 async function getTasksFromNotionDatabase () {
   const pages = [];
@@ -34,12 +34,12 @@ async function getTasksFromNotionDatabase () {
       page_id: page.id,
       id,
       link: props['Ссылка'].url,
-      userID: props['Исполнитель'] && props['Исполнитель'].people.length ? props['Исполнитель'].people[0].id : null,
-      mark: props['Веха'] ? props['Веха'].select.name : null,
-      taskDate: props['Срок задачи'] ? props['Срок задачи'].date.start : null,
-      projectName: props['Проект'] ? props['Проект'].select.name : null,
-      projectDate: props['Срок проекта'] ? props['Срок проекта'].date.start : null,
-      author: props['Автор'] ? props['Автор'].select.name : null
+      userID: props['Исполнитель'] && props['Исполнитель'].people && props['Исполнитель'].people.length ? props['Исполнитель'].people[0].id : null,
+      mark: props['Веха'] && props['Веха'].select ? props['Веха'].select.name : null,
+      taskDate: props['Срок задачи'] && props['Срок задачи'].date ? props['Срок задачи'].date.start : null,
+      projectName: props['Проект'] && props['Проект'].select ? props['Проект'].select.name : null,
+      projectDate: props['Срок проекта'] && props['Срок проекта'].date ? props['Срок проекта'].date.start : null,
+      author: props['Автор'] && props['Автор'].select ? props['Автор'].select.name : null
     };
   });
 }
@@ -48,7 +48,7 @@ async function retrieveTable() {
   const result = await notion.databases.retrieve({
     database_id: databaseId
   }).catch(error => {
-    printError ('-', 'retrieveTable', error);
+    printError ('retrieveTable', {}, error);
   });
   return result;
 }
@@ -72,7 +72,7 @@ async function getUsers2() {
   return users.map (user => {
     return {
       fio: user.properties['ФИО'].title[0].plain_text,
-      id: user.properties.user.people[0].id
+      id: user.properties['user'].people[0].id
     }
   });
 }
@@ -103,7 +103,7 @@ if (tasks.length) {
       });
     })
     .catch (err => {
-      printError ('-', 'getTaskFromNotion', err);
+      printError ('getTaskFromNotion', {}, err);
     });
 } else {
   console.log('Список задач из tasks.json пустой!');
@@ -127,7 +127,7 @@ function resolveTask (item, currentTasks, users) {
       return updateTask (item, currentTask);
     }
   } catch (error) {
-    printError (item.link, 'resolveTask', error);
+    printError ('resolveTask', item, error);
   }
 }
 
@@ -140,7 +140,7 @@ function addTask (item) {
       properties: properties,
     })
   } catch (error) {
-    printError (item.link, 'addTask', err);
+    printError ('addTask', item, err);
     return addTask(item, true);
   }
 }
@@ -154,14 +154,14 @@ function archiveTask(completedTask, currentTasks) {
     return notion.pages
       .update ({
         page_id: currentTask.page_id,
-        properties: {
-          Выполнено: createPropertyByType('checkbox', true)
-        }
+        // properties: {
+        //   Выполнено: createPropertyByType('checkbox', true)
+        // }
         // FIXME: сейчас архивирование не работает
-        // archived: true
+        archived: true
       })
       .catch (err => {
-        printError (currentTask.link, 'archiveTask', err);
+        printError ('archiveTask', currentTask, err);
       });
   }
 }
@@ -178,44 +178,44 @@ function updateTask (item, currentTask) {
         properties: properties
       })
       .catch (err => {
-        printError (item.link, 'updateTask', err);
+        printError ('updateTask', item, err);
       });
   }
 }
 
 function createProperties (item, isNew, currentTask = {}) {
   const properties = {
-    ID: createPropertyByType('title', item.id),
     Описание: createPropertyByType('rich_text', item.description),
   };
 
   if (isNew) {
+    properties.ID = createPropertyByType('title', item.id);
     properties.Ссылка = createPropertyByType('url', item.link);
   }
 
-  if (item.userID && item.userID !== currentTask.userID) {
+  if (item.userID) {
     properties.Исполнитель = createPropertyByType('people', item.userID);
   }
 
-  if (item.mark && item.mark !== currentTask.mark) {
+  if (item.mark) {
     properties.Веха = createPropertyByType('select', item.mark);
   }
 
-  if (item.taskDate && currentTask.taskDate && new Date (item.taskDate).toISOString() !== new Date (currentTask.taskDate).toISOString()) {
+  if (item.taskDate) {
     properties['Срок задачи'] = createPropertyByType('date', item.taskDate);
   }
-  
-  if (item.projectName && item.projectName !== currentTask.projectName) {
-    properties.Проект = createPropertyByType('select', item.projectName, 100);
+  if (item.projectName) {
+    properties.Проект = createPropertyByType('select', item.projectName, 40);
   }
 
-  if (item.projectDate && currentTask.projectDate && new Date(item.projectDate).toISOString() !== new Date(currentTask.projectDate).toISOString()) {
+  if (item.projectDate) {
     properties['Срок проекта'] = createPropertyByType('date', item.projectDate);
   }
 
-  if (item.author && item.author !== currentTask.author) {
+  if (item.author) {
     properties['Автор'] = createPropertyByType('select', item.author);
   }
+  // console.log(item, properties)
   return properties;
 }
 
@@ -282,10 +282,10 @@ function createPropertyByType(type, value = '', textLength = 2000) {
   return result;
 }
 
-function printError(id, type, error) {
+function printError(type, item, error) {
   console.log ('======================================');
   console.log ('Type: ' + type);
-  console.log ('ID: ' + id);
+  console.log ('Item: ', item);
   console.error (error);
   console.log ('======================================');
 }
