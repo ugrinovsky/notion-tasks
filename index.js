@@ -149,7 +149,11 @@ function addTask(item) {
         }).then(() => {
             // printMessage('🆕 Задача добавлена');
         }).catch((error) => {
-            printError('Добавление задачи', item, error);
+            if (error.status === 409) {
+                return addTask(item);
+            } else {
+                printError('Добавление задачи', item, error);
+            }
         });
 }
 
@@ -238,7 +242,7 @@ function createPropertyByType(type, value = '', textLength = 2000) {
         case 'select':
             result = {
                 select: {
-                    name: value.slice(0, textLength),
+                    name: value.slice(0, textLength).replace(/[,]/gi, ''),
                 }
             };
             break;
